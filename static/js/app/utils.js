@@ -30,7 +30,6 @@
     var utils = {
 
         http: {
-
             request: function($http, method, url, data){
                 if (typeof data == 'undefined')
                     data = {};
@@ -44,10 +43,7 @@
                     return _service_result(res);
                 });                
             },
-
-
         },
-
     };
 
     window.utils = utils;
