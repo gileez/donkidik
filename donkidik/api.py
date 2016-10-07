@@ -6,8 +6,24 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from donkidik.decorators import api_login_required
 
+# HOME VIEW
+
+
+@csrf_exempt
+def get_feed(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'GET':
+        posts = []
+        for post in Post.objects.all().order_by('-last_action_ts')[:50]:
+            posts.append(post.to_json(request.user))
+
+        ret['status'] = 'OK'
+        ret['posts'] = posts
+
+    return JsonResponse(ret)
 
 # USER
+
 
 @csrf_exempt
 def user_create(request):

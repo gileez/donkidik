@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from datetime import datetime
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 POST_TYPE_GENERAL = 1
 POST_TYPE_REPORT = 2
@@ -9,6 +11,14 @@ POST_TYPES = [
     (POST_TYPE_GENERAL, 'General'),
     (POST_TYPE_REPORT, 'Report'),
 ]
+
+
+@receiver(post_save, sender=User)
+def create_profile(sender, **kwargs):
+    # make sure its not an update
+    if kwargs.get('created', False):
+        UserProfile.objects.get_or_create(user=kwargs.get('instance'))
+    return
 
 
 class UserProfile(models.Model):
@@ -27,8 +37,8 @@ class Post(models.Model):
     post_type = models.IntegerField(choices=POST_TYPES, default=POST_TYPE_GENERAL, blank=False, null=False, db_index=True)
     text = models.TextField()
     score = models.IntegerField(default=0)
-    upvotes = models.ManyToManyField(User, related_name='upvoted_posts')
-    downvotes = models.ManyToManyField(User, related_name='downvoted_posts')
+    upvotes = models.ManyToManyField(User, related_name='upvoted_posts', blank=True)
+    downvotes = models.ManyToManyField(User, related_name='downvoted_posts', blank=True)
     created_ts = models.DateTimeField(default=datetime.now)
     last_action_ts = models.DateTimeField(default=datetime.now)
 
@@ -37,6 +47,43 @@ class Post(models.Model):
 
     def __str__(self):
         return "{} post".format(self.user.email)
+
+    def to_json(self, user):
+        uv = [u.id for u in self.upvotes.all()]
+        dv = [u.id for u in self.downvotes.all()]
+        ret = {
+            'post_id': self.id,
+            'post_type': self.post_type,
+            'user': {
+                'name': self.user.first_name,
+                'id': self.user.id,
+                'score': 0,  # self.user.profile.score,
+                'pic': self.user.profile.pic
+            },
+            'text': self.text,
+            'created_ts': self.created_ts,
+            'last_action_ts': self.last_action_ts,
+            'time': '',
+            'seconds_passed': 0,
+            'comments': [c.to_json() for c in self.comments.all()],
+            'score': self.score,
+            'upvotes': uv,
+            'downvotes': dv,
+            'is_owner': user.id == self.user.id,
+            'is_upvoted': user.id in uv,
+            'is_downvoted': user.id in dv,
+        }
+
+        if hasattr(self, 'meta'):
+            # there is a meta record for this post
+            ret.update({
+                'knots': self.meta.knots,
+                'gust': self.meta.gust,
+                'spot': self.meta.spot.name if hasattr(self.meta, 'spot') and self.meta.spot else None,
+                'spot_id': self.meta.spot.pk if hasattr(self.meta, 'spot') and self.meta.spot else None,
+            })
+
+        return ret
 
     @staticmethod
     def create(user, post_type, text=None, meta_data=None):
@@ -93,9 +140,19 @@ class Comment(models.Model):
     def __str__(self):
         return "{} comment".format(self.post)
 
+    def to_json(self):
+        return {
+            'text': self.text,
+            'date': self.created_ts,
+            'time': '',
+            'user_name': self.user.first_name,
+            'user_id': self.user.id,
+            'comment_id': self.id,
+        }
+
 
 class Spot(models.Model):
-    name = models.CharField(max_length=256, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     latitude = models.CharField(max_length=128)
     longitude = models.CharField(max_length=128)
 

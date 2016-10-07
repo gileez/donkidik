@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Home | DonKiDik{% endblock %}
+
+{% block before_body_end %}
+    <script src="/static/js/app/home/controller.js"></script>
+    <script src="/static/js/app/home/service.js"></script>
+{% endblock %}
+
+{% block body %}
+<div ng-controller="HomeController">
+    <div ng-repeat="post in feed">
+        [[post.id]]: [[post.text]]
+    </div>
+</div>
+{% endblock %}

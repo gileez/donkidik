@@ -1,5 +1,4 @@
 from django.http import JsonResponse
-from shotgun import settings
 import hashlib
 from datetime import datetime
 
