@@ -223,12 +223,14 @@ def post_upvote(request):
 
         if post.user.id == request.user.id:
             # can't vote to yourself
+            ret['error'] = 'own_post'
             return JsonResponse(ret)
 
-        if post.upvotes.filter(user=request.user).exists():
+        if post.upvotes.filter(id=request.user.id).exists():
             ret['error'] = 'already_upvoted'
+            return JsonResponse(ret)
 
-        if post.downvotes.filter(user=request.user).exists():
+        if post.downvotes.filter(id=request.user.id).exists():
             post.downvotes.remove(request.user)
 
         post.upvotes.add(request.user)
@@ -252,12 +254,14 @@ def post_downvote(request):
 
         if post.user.id == request.user.id:
             # can't vote to yourself
+            ret['error'] = 'own_post'
             return JsonResponse(ret)
 
-        if post.downvotes.filter(user=request.user).exists():
+        if post.downvotes.filter(id=request.user.id).exists():
             ret['error'] = 'already_downvoted'
+            return JsonResponse(ret)
 
-        if post.upvotes.filter(user=request.user).exists():
+        if post.upvotes.filter(id=request.user.id).exists():
             post.upvotes.remove(request.user)
 
         post.downvotes.add(request.user)
