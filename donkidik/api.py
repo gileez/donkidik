@@ -221,20 +221,11 @@ def post_upvote(request):
             ret['error'] = 'invalid_post'
             return JsonResponse(ret)
 
-        if post.user.id == request.user.id:
-            # can't vote to yourself
-            ret['error'] = 'own_post'
-            return JsonResponse(ret)
-
-        if post.upvotes.filter(id=request.user.id).exists():
-            ret['error'] = 'already_upvoted'
-            return JsonResponse(ret)
-
-        if post.downvotes.filter(id=request.user.id).exists():
-            post.downvotes.remove(request.user)
-
-        post.upvotes.add(request.user)
-        ret['status'] = 'OK'
+        (success, err) = post.upvote(request.user)
+        if success:
+            ret['status'] = 'OK'
+        else:
+            ret['error'] = err
 
     return JsonResponse(ret)
 
@@ -252,19 +243,10 @@ def post_downvote(request):
             ret['error'] = 'invalid_post'
             return JsonResponse(ret)
 
-        if post.user.id == request.user.id:
-            # can't vote to yourself
-            ret['error'] = 'own_post'
-            return JsonResponse(ret)
-
-        if post.downvotes.filter(id=request.user.id).exists():
-            ret['error'] = 'already_downvoted'
-            return JsonResponse(ret)
-
-        if post.upvotes.filter(id=request.user.id).exists():
-            post.upvotes.remove(request.user)
-
-        post.downvotes.add(request.user)
-        ret['status'] = 'OK'
+        (success, err) = post.downvote(request.user)
+        if success:
+            ret['status'] = 'OK'
+        else:
+            ret['error'] = err
 
     return JsonResponse(ret)

@@ -20,3 +20,18 @@ class PostMetaAdmin(admin.ModelAdmin):
 @admin.register(Spot)
 class SpotAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(ScoreEvent)
+class ScoreEventAdmin(admin.ModelAdmin):
+    readonly_fields = ['upvote_event', 'downvote_event', 'post_event', 'scored_user', 'score', 'created_ts']
+
+
+@admin.register(PostUpVote)
+class PostUpVoteAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(PostDownVote)
+class PostDownVoteAdmin(admin.ModelAdmin):
+    pass

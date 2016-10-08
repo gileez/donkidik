@@ -13,6 +13,11 @@ POST_TYPES = [
 ]
 
 
+EVENT_UPVOTE_SCORE = 2
+EVENT_DOWNVOTE_SCORE = -1
+EVENT_WINDREPORT_SCORE = 5
+
+
 @receiver(post_save, sender=User)
 def create_profile(sender, **kwargs):
     # make sure its not an update
@@ -29,7 +34,15 @@ class UserProfile(models.Model):
         db_table = 'user_profile'
 
     def __str__(self):
-        return "{} profile".format(self.user.email)
+        return "{} profile".format(self.user.username)
+
+    def get_score(self):
+        ret = 0
+        for s in self.user.score_events.all():
+            ret += s.score
+        if ret < 0:  # no negative score...
+            ret = 0
+        return ret
 
 
 class Post(models.Model):
@@ -37,8 +50,8 @@ class Post(models.Model):
     post_type = models.IntegerField(choices=POST_TYPES, default=POST_TYPE_GENERAL, blank=False, null=False, db_index=True)
     text = models.TextField()
     score = models.IntegerField(default=0)
-    upvotes = models.ManyToManyField(User, related_name='upvoted_posts', blank=True)
-    downvotes = models.ManyToManyField(User, related_name='downvoted_posts', blank=True)
+    upvotes = models.ManyToManyField(User, related_name='upvoted_posts', through='PostUpVote', blank=True)
+    downvotes = models.ManyToManyField(User, related_name='downvoted_posts', through='PostDownVote', blank=True)
     created_ts = models.DateTimeField(default=datetime.now)
     last_action_ts = models.DateTimeField(default=datetime.now)
 
@@ -46,7 +59,7 @@ class Post(models.Model):
         db_table = 'post'
 
     def __str__(self):
-        return "{} post".format(self.user.email)
+        return "{} post".format(self.user.username)
 
     def to_json(self, user):
         uv = [u.id for u in self.upvotes.all()]
@@ -111,8 +124,67 @@ class Post(models.Model):
             pm = PostMeta(post=post, spot=spot, knots=knots)
             pm.save()
 
+            # store ScoreEvent
+            ScoreEvent.create(post)
+
         post.save()
         return post
+
+    def upvote(self, user):
+
+        if self.user.id == user.id:
+            return (False, 'own_post')
+
+        if self.upvotes.filter(id=user.id).exists():
+            return (False, 'already_upvoted')
+
+        # store a new upvote action
+        uv = PostUpVote(post=self, user=user)
+        uv.save()
+
+        # store ScoreEvent
+        ScoreEvent.create(uv)
+        return (True, None)
+
+    def downvote(self, user):
+
+        if self.user.id == user.id:
+            return (False, 'own_post')
+
+        if self.downvotes.filter(id=user.id).exists():
+            return (False, 'already_downvoted')
+
+        # store a new downvote action
+        dv = PostDownVote(post=self, user=user)
+        dv.save()
+
+        # store ScoreEvent
+        ScoreEvent.create(dv)
+        return (True, None)
+
+
+class PostUpVote(models.Model):
+    user = models.ForeignKey(User)
+    post = models.ForeignKey(Post)
+    created_ts = models.DateTimeField(default=datetime.now)
+
+    class Meta:
+        db_table = 'post_upvotes'
+
+    def __str__(self):
+        return "[{}] (+v) {} --> {}".format(self.id, self.user.username, self.post)
+
+
+class PostDownVote(models.Model):
+    user = models.ForeignKey(User)
+    post = models.ForeignKey(Post)
+    created_ts = models.DateTimeField(default=datetime.now)
+
+    class Meta:
+        db_table = 'post_downvotes'
+
+    def __str__(self):
+        return "[{}] (-v) {} --> {}".format(self.id, self.user.username, self.post)
 
 
 class PostMeta(models.Model):
@@ -126,6 +198,44 @@ class PostMeta(models.Model):
 
     def __str__(self):
         return "Post {} meta".format(self.post)
+
+
+class ScoreEvent(models.Model):
+    upvote_event = models.ForeignKey('PostUpVote', blank=True, null=True, db_index=True)
+    downvote_event = models.ForeignKey('PostDownVote', blank=True, null=True, db_index=True)
+    post_event = models.ForeignKey('Post', blank=True, null=True, db_index=True)
+    scored_user = models.ForeignKey(User, related_name='score_events')
+    score = models.IntegerField(default=0, blank=False, null=False)
+    created_ts = models.DateTimeField(default=datetime.now)
+
+    class Meta:
+        db_table = 'score_event'
+
+    def __str__(self):
+        return "ScoreEvent {} {}{}".format(self.scored_user, '+' if self.score >= 0 else '-', self.score)
+
+    @staticmethod
+    def create(event):
+        score_event = None
+        if isinstance(event, PostUpVote):
+            # remove user downvotes & related score events
+            PostDownVote.objects.filter(post=event.post, user=event.user).delete()
+            # create ScoreEvent
+            score_event = ScoreEvent(upvote_event=event, scored_user=event.post.user, score=EVENT_UPVOTE_SCORE)
+        elif isinstance(event, PostDownVote):
+            # remove user upvotes & related score events
+            PostUpVote.objects.filter(post=event.post, user=event.user).delete()
+            # create ScoreEvent
+            score_event = ScoreEvent(downvote_event=event, scored_user=event.post.user, score=EVENT_DOWNVOTE_SCORE)
+        elif isinstance(event, Post):
+            if event.post_type == POST_TYPE_REPORT:
+                # create ScoreEvent
+                score_event = ScoreEvent(post_event=event, scored_user=event.user, score=EVENT_WINDREPORT_SCORE)
+
+        if score_event:
+            score_event.save()
+            return score_event
+        return None
 
 
 class Comment(models.Model):
