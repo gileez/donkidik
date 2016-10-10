@@ -35,3 +35,8 @@ class PostUpVoteAdmin(admin.ModelAdmin):
 @admin.register(PostDownVote)
 class PostDownVoteAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(Session)
+class SessionAdmin(admin.ModelAdmin):
+    pass
