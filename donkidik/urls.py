@@ -12,6 +12,7 @@ urlpatterns = [
 
     # HOME VIEW
     url(r'^api/feed$', api.get_feed),
+    url(r'^api/sessions$', api.get_sessions),
 
     # POST api
     url(r'^api/post/create$', api.post_create),

@@ -22,6 +22,21 @@ def get_feed(request):
 
     return JsonResponse(ret)
 
+
+@csrf_exempt
+def get_sessions(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'GET':
+        sessions = []
+        for session in Session.objects.all().order_by('end_ts'):
+            sessions.append(session.to_json(request.user))
+
+        ret['status'] = 'OK'
+        ret['sessions'] = sessions
+
+    return JsonResponse(ret)
+
+
 # USER
 
 

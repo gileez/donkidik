@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from datetime import datetime
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
+import pytz
 POST_TYPE_GENERAL = 1
 POST_TYPE_REPORT = 2
 # POST_TYPE_FORCAST = 3
@@ -11,8 +11,18 @@ POST_TYPES = [
     (POST_TYPE_GENERAL, 'General'),
     (POST_TYPE_REPORT, 'Report'),
 ]
+# ---------------------------------------------
+SESSION_TYPE_BIGKITES = 1
+SESSION_TYPE_REGULAR = 2
+SESSION_TYPE_SMALLKITES = 3
 
-
+SESSION_TYPES = [
+    (SESSION_TYPE_BIGKITES, 'BigKites'),
+    (SESSION_TYPE_REGULAR, 'Regular'),
+    (SESSION_TYPE_SMALLKITES, 'SmallKites'),
+]
+# --------------------------------------------
+# SCORES
 EVENT_UPVOTE_SCORE = 2
 EVENT_DOWNVOTE_SCORE = -1
 EVENT_WINDREPORT_SCORE = 5
@@ -49,11 +59,11 @@ class Post(models.Model):
     user = models.ForeignKey(User, related_name='posts')
     post_type = models.IntegerField(choices=POST_TYPES, default=POST_TYPE_GENERAL, blank=False, null=False, db_index=True)
     text = models.TextField()
-    score = models.IntegerField(default=0)
     upvotes = models.ManyToManyField(User, related_name='upvoted_posts', through='PostUpVote', blank=True)
     downvotes = models.ManyToManyField(User, related_name='downvoted_posts', through='PostDownVote', blank=True)
     created_ts = models.DateTimeField(default=datetime.now)
     last_action_ts = models.DateTimeField(default=datetime.now)
+    related_session = models.ForeignKey('Session', related_name='related_posts', blank=True, null=True)
 
     class Meta:
         db_table = 'post'
@@ -61,16 +71,20 @@ class Post(models.Model):
     def __str__(self):
         return "{} post".format(self.user.username)
 
+    def get_score(self):
+        return self.upvotes.count() - self.downvotes.count()
+
     def to_json(self, user):
         uv = [u.id for u in self.upvotes.all()]
         dv = [u.id for u in self.downvotes.all()]
         ret = {
             'post_id': self.id,
             'post_type': self.post_type,
+            'post_score': self.get_score(),
             'user': {
                 'name': self.user.first_name,
                 'id': self.user.id,
-                'score': 0,  # self.user.profile.score,
+                'score': self.user.profile.get_score(),
                 'pic': self.user.profile.pic
             },
             'text': self.text,
@@ -79,7 +93,6 @@ class Post(models.Model):
             'time': '',
             'seconds_passed': 0,
             'comments': [c.to_json() for c in self.comments.all()],
-            'score': self.score,
             'upvotes': uv,
             'downvotes': dv,
             'is_owner': user.id == self.user.id,
@@ -272,12 +285,139 @@ class Spot(models.Model):
     def __str__(self):
         return "Spot {}".format(self.name)
 
+    # GAL is this function really necessary? can't we just make an instance from api?
+    # @staticmethod
+    # def create(name, latitude, longtitude):
+    #     spot = Spot(name=name, latitude=latitude, longtitude=longtitude)
+    #     spot.save()
+    #     return spot
+
+
+@receiver(post_save, sender=PostMeta)
+def sessionManager(sender, **kwargs):
+    # make sure its a report
+    post = kwargs.get('instance').post
+    if post.post_type != POST_TYPE_REPORT:
+        return
+    # TODO should search for a session from today. don't want to open two sessions
+    now = datetime.now()
+    today_start = now.replace(hour=0, minute=0, second=0)
+    today_end = now.replace(hour=23, minute=59, second=59)
+    session = Session.objects.filter(spot=post.meta.spot, created_ts__gte=today_start, created_ts__lte=today_end).first()
+    if session:
+        # theres an ongoing session. lets update it
+        session.update(post)
+    else:
+        # create a session
+        Session.create(post)
+    return
+
+
+def get_end_ts():
+    return datetime.now().replace(tzinfo=pytz.UTC, hour=23, minute=59, second=59)
+
 
 class Session(models.Model):
-    # TODO
-    pass
+    spot = models.ForeignKey('Spot', related_name='sessions', blank=False, null=True)
+    owner = models.ForeignKey(User, related_name='own_sessions', blank=True, null=True)
+    users = models.ManyToManyField(User, related_name='sessions', blank=True)
+    intended_users = models.ManyToManyField(User, related_name='intented_sessions', blank=True)
+    created_ts = models.DateTimeField(default=datetime.now)
+    end_ts = models.DateTimeField(default=get_end_ts)
+    closed_by = models.ForeignKey(User, related_name='closed_sessions', blank=True, null=True)
+    # TODO future_ts for forecasts
+    session_type = models.IntegerField(choices=SESSION_TYPES, default=SESSION_TYPE_REGULAR, blank=False, null=False)
+    active = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'session'
+
+    def __str__(self):
+        return "Session {} at {}".format(self.id, self.spot.name)
+
+    @staticmethod
+    def create(post):
+        if post.meta.knots < 8:
+            return None
+        if post.meta.knots < 15:
+            session_type = SESSION_TYPE_BIGKITES
+        elif post.meta.knots > 25:
+            session_type = SESSION_TYPE_SMALLKITES
+        s = Session(spot=post.meta.spot)
+        s.owner = post.user
+        s.session_type = session_type
+        s.active = True
+        s.save()
+        # GAL: must save before many to many modifications. anyway to avoid this?
+        s.users.add(post.user)
+        s.related_posts.add(post)
+        s.save()
+        return s
+
+    def update(self, post):
+        session_type = self.session_type
+        self.active = True
+        if post.meta.knots < 8:
+            # this session should end
+            self.end_ts = datetime.now()
+            self.active = False
+            self.closed_by = post.user
+        elif post.meta.knots < 15:
+            session_type = SESSION_TYPE_BIGKITES
+        elif post.meta.knots > 25:
+            session_type = SESSION_TYPE_SMALLKITES
+        else:
+            session_type = SESSION_TYPE_REGULAR
+        self.users.add(post.user)
+        self.related_posts.add(post)
+        self.session_type = session_type
+        self.save()
+        return self
+
+    def add_user(self, user):
+        # GAL - could this function create a race on the session due to many people trying to add themselves to the session?
+        # adds user to this session and removes him from intended users if was there
+        if self.intended_users.filter(pk=user.pk):
+            # TODO check if this could have been done with the object itself
+            self.intended_users.delete(user)
+        self.users.add(user)
+        self.save()
+        return
+
+    def remove_user(self, user):
+        # removes user from this session
+        self.users.remove(user)
+        self.save()
+        return
+
+    def add_intended_user(self, user):
+        if self.users.filter(pk=user.pk):
+            self.users.remove(user)
+        self.intended_users.add(user)
+        self.save()
+        return
+
+    def remove_intended_user(self, user):
+        self.intended_users.remove(user)
+        self.save()
+        return
+
+    def to_json(self, user):
+        return {
+            'active': self.active,
+            'session_id': self.pk,
+            'spot': self.spot.name,
+            'spot_id': self.spot.pk,
+            'owner': self.owner.pk,
+            'created_ts': self.created_ts,
+            'type': self.session_type,
+            # GAL - should these fields do the full jsonify for user \ posts \ at this stage?
+            'users': [u.pk for u in self.users],
+            'intended_users': [u.pk for u in self.intended_users],
+            'related_posts': [p.pk for p in self.related_posts]
+        }
 
 
 class Forecast(models.Model):
-    # TODO
+    # TODO - PHASE 2
     pass

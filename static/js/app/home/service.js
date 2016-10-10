@@ -7,5 +7,9 @@ app.factory('homeService', function($http){
             return utils.http.request($http, 'get', '/api/feed');
         },
 
+        get_sessions: function(){
+            return utils.http.request($http, 'get', '/api/feed')
+        },
+
     };
 });
