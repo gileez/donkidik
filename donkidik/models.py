@@ -4,6 +4,8 @@ from datetime import datetime
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 import pytz
+
+
 POST_TYPE_GENERAL = 1
 POST_TYPE_REPORT = 2
 # POST_TYPE_FORCAST = 3
@@ -54,6 +56,10 @@ class UserProfile(models.Model):
             ret = 0
         return ret
 
+    def update(self, data):
+        # TODO
+        pass
+
 
 class Post(models.Model):
     user = models.ForeignKey(User, related_name='posts')
@@ -63,7 +69,7 @@ class Post(models.Model):
     downvotes = models.ManyToManyField(User, related_name='downvoted_posts', through='PostDownVote', blank=True)
     created_ts = models.DateTimeField(default=datetime.now)
     last_action_ts = models.DateTimeField(default=datetime.now)
-    related_session = models.ForeignKey('Session', related_name='related_posts', blank=True, null=True)
+    related_session = models.ForeignKey('Session', models.SET_NULL, related_name='related_posts', blank=True, null=True)
 
     class Meta:
         db_table = 'post'
@@ -121,10 +127,10 @@ class Post(models.Model):
         if text:
             post.text = text
 
-        elif post_type == POST_TYPE_REPORT:
+        if post_type == POST_TYPE_REPORT:
             spot_id = meta_data['spot_id'] if 'spot_id' in meta_data else None
             knots = meta_data['knots'] if 'knots' in meta_data else None
-            # TODO: gust
+            gust = meta_data['gust'] if 'gust' in meta_data else None
 
             if not spot_id or not knots:
                 return None
@@ -134,7 +140,7 @@ class Post(models.Model):
             except:
                 return None
 
-            pm = PostMeta(post=post, spot=spot, knots=knots)
+            pm = PostMeta(post=post, spot=spot, knots=knots, gust=gust)
             pm.save()
 
             # store ScoreEvent
@@ -143,12 +149,56 @@ class Post(models.Model):
         post.save()
         return post
 
-    def upvote(self, user):
+    def update(self, user, post_type, text, meta_data=None):
+        if post_type not in [POST_TYPE_GENERAL, POST_TYPE_REPORT]:
+            return False
+        else:
+            self.post_type = post_type
+        if text:
+            self.text = text
+        if post_type == POST_TYPE_GENERAL:
+            # GAL need some clarification here
+            post.meta.delete()
+            post.meta = None
+        elif post_type == POST_TYPE_REPORT:
+            spot_id = meta_data['spot_id'] if 'spot_id' in meta_data else None
+            knots = meta_data['knots'] if 'knots' in meta_data else None
+            gust = meta_data['gust'] if 'gust' in meta_data else None
 
+            if not spot_id or not knots:
+                return None
+            if not (hasattr(self, 'meta') and spot_id == post.meta.spot.pk):
+                # need to replace the spot instance
+                try:
+                    spot = Spot.objects.get(id=spot_id)
+                except:
+                    return None
+            if hasattr(self, 'meta'):
+                # simply update the meta fiels
+                self.meta.spot = spot
+                self.meta.knots = knots
+                self.meta.save()
+            else:
+                # need to create a PostMeta
+                pm = PostMeta(post=self, spot=spot, knots=knots, gust=gust)
+                pm.save()
+
+        self.save()
+        return True
+
+    def remove(self, user):
+        if not (user.pk == self.user.pk or user.is_admin):
+            # user has no permission to delete this post
+            return False
+        self.delete()
+        return True
+
+    def upvote(self, user):
         if self.user.id == user.id:
             return (False, 'own_post')
 
         if self.upvotes.filter(id=user.id).exists():
+            # GAL should i make a cancel_upvote function too?
             return (False, 'already_upvoted')
 
         # store a new upvote action
@@ -174,6 +224,22 @@ class Post(models.Model):
         # store ScoreEvent
         ScoreEvent.create(dv)
         return (True, None)
+
+    def remove_comment(self, user, cid):
+        if not (user or cid):
+            return (False, "Missing Data")
+        try:
+            c = self.comments.get(pk=cid)
+        except:
+            return (False, "Comment Not Found")
+        return c.remove(user)
+
+    @staticmethod
+    def get_by_id(pid):
+        try:
+            return Post.objects.get(pk=pid)
+        except:
+            return None
 
 
 class PostUpVote(models.Model):
@@ -269,9 +335,32 @@ class Comment(models.Model):
             'date': self.created_ts,
             'time': '',
             'user_name': self.user.first_name,
-            'user_id': self.user.id,
-            'comment_id': self.id,
+            'user_id': self.user.pk,
+            'comment_id': self.pk,
         }
+
+    @staticmethod
+    def create(user, text, pid):
+        if not (user and text):
+            return False, "Missing data"
+        try:
+            p = Post.objects.get(pk=pid)
+        except:
+            return False, "Post not found"
+        try:
+            c = Comment(user=user, text=text, post=p).save()
+            p.comments.add(c)
+        except:
+            return False, "Failed creating the comment"
+        return c
+
+    def remove(self, user):
+        if not (user):
+            return (False, "Missing Data")
+        if not (user.pk == self.user.pk or user.is_admin):
+            return (False, "Permission Denied")
+        self.delete()
+        return (True, None)
 
 
 class Spot(models.Model):
@@ -314,6 +403,7 @@ def sessionManager(sender, **kwargs):
 
 
 def get_end_ts():
+    # TODO handle timezone properly
     return datetime.now().replace(tzinfo=pytz.UTC, hour=23, minute=59, second=59)
 
 

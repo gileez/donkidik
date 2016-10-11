@@ -176,8 +176,8 @@ def post_comment_add(request):
         post_id = request.POST.get('post_id')
         text = request.POST.get('text')
 
-        try:
-            post = Post.objects.get(id=post_id)
+        post = Post.get_by_id(post_id)
+        ############
         except:
             ret['error'] = 'invalid_post'
             return JsonResponse(ret)
