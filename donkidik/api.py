@@ -6,9 +6,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from donkidik.decorators import api_login_required
 
-# HOME VIEW
 
-
+# ==============================GET======================================
 @csrf_exempt
 def get_feed(request):
     ret = {'status': 'FAIL'}
@@ -37,7 +36,64 @@ def get_sessions(request):
     return JsonResponse(ret)
 
 
-# USER
+@csrf_exempt
+@login_required
+def get_one_post(request, post_id):
+    ret = {'status': 'FAIL'}
+    if not request.user.is_authenticated():
+        ret['error'] = "User is not logged in"
+        return JsonResponse(ret)
+    else:
+        ret['post'] = []
+        p = Post.get_by_id(post_id)
+        if p:
+            ret['post'].append(p.to_json(user=request.user))
+            ret['status'] = 'OK'
+    return JsonResponse(ret)
+
+
+@csrf_exempt
+@login_required
+def get_spots(request):
+    ret = {'status': 'FAIL', 'spots': []}
+    spots = Spot.objects.all()
+    for s in spots:
+        ret['spots'].append({
+                                'id': int(s.id),
+                                'name': s.name,
+                                'long': s.longtitude,
+                                'lat': s.latitude
+                            })
+    ret['status'] = 'OK'
+    return JsonResponse(ret)
+
+
+# ================================USER===========================================
+@csrf_exempt
+def login_req(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+
+        if not email or not password:
+            ret['error'] = 'invalid_creds'
+
+        user = authenticate(username=email, password=password)
+        if user:
+            ret['status'] == 'OK'
+            # GAL - i think this next line was missing here
+            login(request, user)
+        else:
+            ret['error'] = 'invalid_creds'
+
+    return JsonResponse(ret)
+
+
+@csrf_exempt
+def logout_req(request):
+    logout(request)
+    return HttpResponseRedirect('/')
 
 
 @csrf_exempt
@@ -71,25 +127,6 @@ def user_create(request):
 
 
 @csrf_exempt
-def authenticate_user(request):
-    ret = {'status': 'FAIL'}
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-
-        if not email or not password:
-            ret['error'] = 'invalid_creds'
-
-        user = authenticate(username=email, password=password)
-        if user:
-            ret['status'] == 'OK'
-        else:
-            ret['error'] = 'invalid_creds'
-
-    return JsonResponse(ret)
-
-
-@csrf_exempt
 @api_login_required
 def user_update(request):
     ret = {'status': 'FAIL'}
@@ -116,11 +153,26 @@ def user_update(request):
         if new_password:
             request.user.set_password(new_password)
 
+        if request.FILES and 'pic' in request.FILES:
+            p = request.user.profile
+            pic_file = request.FILES['pic']
+            filename = p.unique_image_path()
+            print "saving image to {}".format(filename)
+
+            destination = open(filename, 'wb+')
+            for chunk in avatar_file.chunks():
+                destination.write(chunk)
+            destination.close()
+            print "saved"
+
+            p.pic = 'static/avatars/{}/{}'.format(p.user.id, filename[filename.rfind('/') + 1:])
+            p.save()
+
         if to_save:
             request.user.save()
 
         ret['status'] = 'OK'
-
+        ret['user'] = p.to_json(request.user)
     return JsonResponse(ret)
 
 
@@ -138,7 +190,7 @@ def user_delete(request):
     return JsonResponse(ret)
 
 
-# POST
+# ====================================POST====================================================
 
 @csrf_exempt
 @api_login_required
@@ -170,34 +222,35 @@ def post_create(request):
 
 @csrf_exempt
 @api_login_required
-def post_comment_add(request):
+def post_update(request):
     ret = {'status': 'FAIL'}
     if request.method == 'POST':
-        post_id = request.POST.get('post_id')
+        post_type = request.POST.get('post_type')
         text = request.POST.get('text')
+        spot_id = request.POST.get('spot_id')
+        knots = request.POST.get('knots')
 
-        post = Post.get_by_id(post_id)
-        ############
-        except:
-            ret['error'] = 'invalid_post'
-            return JsonResponse(ret)
-
-        if not text:
+        if not post_type:
             ret['error'] = 'missing_args'
             return JsonResponse(ret)
 
-        c = Comment(post=post, user=request.user, text=text)
-        c.save()
-        ret['status'] = 'OK'
+        meta_data = {
+            "spot_id": spot_id,
+            "knots": knots
+        }
+        post = Post.get_by_id(post_id)
+        if not post:
+            ret['error'] = 'invalid_post'
+            return JsonResponse(ret)
 
-    return JsonResponse(ret)
+        (success, err) = post.update(user, post_type, text=text, meta_data=meta_data)
+        if sucess:
+            ret['ststus'] = 'OK'
+            ret['post_id'] = post_id
+        else:
+            ret['error'] = err
 
-
-@csrf_exempt
-@api_login_required
-def post_update(request):
-    # TODO
-    pass
+        return JsonResponse(ret)
 
 
 @csrf_exempt
@@ -265,3 +318,61 @@ def post_downvote(request):
             ret['error'] = err
 
     return JsonResponse(ret)
+
+
+# =====================================COMMENT=======================================
+@csrf_exempt
+@api_login_required
+def add_comment(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'POST':
+        post_id = request.POST.get('post_id')
+        text = request.POST.get('text')
+
+        (comment, err) = Comment.create(request.user, text, post_id)
+        if err is None:
+            ret['status'] = 'OK'
+            ret['comment_id'] = c.pk
+        else:
+            ret['error'] = err
+
+    return JsonResponse(ret)
+
+
+@csrf_exempt
+@api_login_required
+def remove_comment(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'POST':
+        comment_id = request.POST.get('comment_id')
+        comment = Comment.get_by_id(comment_id)
+        if comment:
+            (success, err) = comment.remove(request.user)
+            if success:
+                ret['status'] = 'OK'
+            else:
+                ret['error'] = err
+
+    return JsonResponse(ret)
+
+
+@csrf_exempt
+@api_login_required
+def update_comment(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'POST':
+        comment_id = request.POST.get('comment_id')
+        text = request.POST.get('text')
+        comment = Comment.get_by_id(comment_id)
+        if comment:
+            (success, err) = comment.update(request.user, text)
+            if success:
+                ret['status'] = 'OK'
+            else:
+                ret['error'] = err
+
+    return JsonResponse(ret)
+
+# ====================================FOLLOW========================================
+# TODO
+# ====================================SESSION=======================================

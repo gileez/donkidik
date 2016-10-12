@@ -149,9 +149,11 @@ class Post(models.Model):
         post.save()
         return post
 
-    def update(self, user, post_type, text, meta_data=None):
+    def update(self, user, post_type, text=None, meta_data=None):
+        if not (user.pk == self.user.pk or user.is_admin):
+            return (False, "permission_denied")
         if post_type not in [POST_TYPE_GENERAL, POST_TYPE_REPORT]:
-            return False
+            return (False, "invalid_post_type")
         else:
             self.post_type = post_type
         if text:
@@ -166,15 +168,15 @@ class Post(models.Model):
             gust = meta_data['gust'] if 'gust' in meta_data else None
 
             if not spot_id or not knots:
-                return None
+                return (False, "missing_args")
             if not (hasattr(self, 'meta') and spot_id == post.meta.spot.pk):
                 # need to replace the spot instance
                 try:
                     spot = Spot.objects.get(id=spot_id)
                 except:
-                    return None
+                    return (False, "invalid_spot")
             if hasattr(self, 'meta'):
-                # simply update the meta fiels
+                # simply update the meta fields
                 self.meta.spot = spot
                 self.meta.knots = knots
                 self.meta.save()
@@ -184,7 +186,7 @@ class Post(models.Model):
                 pm.save()
 
         self.save()
-        return True
+        return (True, None)
 
     def remove(self, user):
         if not (user.pk == self.user.pk or user.is_admin):
@@ -235,9 +237,9 @@ class Post(models.Model):
         return c.remove(user)
 
     @staticmethod
-    def get_by_id(pid):
+    def get_by_id(post_id):
         try:
-            return Post.objects.get(pk=pid)
+            return Post.objects.get(pk=post_id)
         except:
             return None
 
@@ -340,26 +342,42 @@ class Comment(models.Model):
         }
 
     @staticmethod
-    def create(user, text, pid):
-        if not (user and text):
-            return False, "Missing data"
+    def get_by_id(comment_id):
         try:
-            p = Post.objects.get(pk=pid)
+            return Comment.objects.get(pk=comment_id)
         except:
-            return False, "Post not found"
+            return None
+
+    @staticmethod
+    def create(user, text, post_id):
+        if not (user and text):
+            return (False, 'missing_args')
+        try:
+            p = Post.objects.get(pk=post_id)
+        except:
+            return (False, 'invalid_post')
         try:
             c = Comment(user=user, text=text, post=p).save()
-            p.comments.add(c)
         except:
-            return False, "Failed creating the comment"
-        return c
+            return (False, 'failed_creating_comment')
+        return (c, None)
 
     def remove(self, user):
         if not (user):
-            return (False, "Missing Data")
+            return (False, 'missing_user')
         if not (user.pk == self.user.pk or user.is_admin):
-            return (False, "Permission Denied")
+            return (False, 'permission_denied')
         self.delete()
+        return (True, None)
+
+    def update(self, user, text):
+        if not (user or text):
+            return (False, 'missing_args')
+        if not (user.pk == self.user.pk):
+            return (False, 'permission_denied')
+        self.text = text
+        # TODO self.last_updated = datetime.now()
+        self.save()
         return (True, None)
 
 
@@ -426,6 +444,13 @@ class Session(models.Model):
         return "Session {} at {}".format(self.id, self.spot.name)
 
     @staticmethod
+    def get_by_id(session_id):
+        try:
+            return Session.objects.get(pk=session_id)
+        except:
+            return None
+
+    @staticmethod
     def create(post):
         if post.meta.knots < 8:
             return None
@@ -465,32 +490,38 @@ class Session(models.Model):
         return self
 
     def add_user(self, user):
-        # GAL - could this function create a race on the session due to many people trying to add themselves to the session?
-        # adds user to this session and removes him from intended users if was there
-        if self.intended_users.filter(pk=user.pk):
-            # TODO check if this could have been done with the object itself
-            self.intended_users.delete(user)
-        self.users.add(user)
-        self.save()
-        return
+        try:
+            self.intended_users.remove(user)
+            self.users.add(user)
+            self.save()
+        except:
+            return False
+        return True
 
     def remove_user(self, user):
-        # removes user from this session
-        self.users.remove(user)
-        self.save()
-        return
+        try:
+            self.users.remove(user)
+            self.save()
+        except:
+            return False
+        return True
 
     def add_intended_user(self, user):
-        if self.users.filter(pk=user.pk):
+        try:
             self.users.remove(user)
-        self.intended_users.add(user)
-        self.save()
-        return
+            self.intended_users.add(user)
+            self.save()
+        except:
+            return False
+        return True
 
     def remove_intended_user(self, user):
-        self.intended_users.remove(user)
-        self.save()
-        return
+        try:
+            self.intended_users.remove(user)
+            self.save()
+        except:
+            return False
+        return True
 
     def to_json(self, user):
         return {

@@ -11,6 +11,9 @@ class UserProfileAdmin(admin.ModelAdmin):
 class PostAdmin(admin.ModelAdmin):
     pass
 
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    pass
 
 @admin.register(PostMeta)
 class PostMetaAdmin(admin.ModelAdmin):
