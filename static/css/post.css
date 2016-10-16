@@ -15,3 +15,5 @@
 .ui.card.post_element .extra.content .input, .ui.card.post_element .extra.content .input input{width:100%;}
 .ui.card.post_element .extra.content .input input{font-size:14px;}
 .ui.card.post_element .extra.content .send_icon{cursor:pointer;}
+.ui.card.post_element .content.comments{border-top:solid 1px #f1f1f1;}
+.ui.card.post_element .content.comments .comment .content{position: relative;top:1px;}
