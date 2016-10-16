@@ -164,7 +164,7 @@ def user_update(request):
             destination.close()
             print "saved"
 
-            p.pic = 'static/avatars/{}/{}'.format(p.user.id, filename[filename.rfind('/') + 1:])
+            p.pic = '/static/avatars/{}/{}'.format(p.user.id, filename[filename.rfind('/') + 1:])
             p.save()
 
         if to_save:
@@ -290,7 +290,10 @@ def post_upvote(request):
 
         (success, err) = post.upvote(request.user)
         if success:
+            ret['updated_score'] = post.get_score()
             ret['status'] = 'OK'
+            if err:
+                ret['state'] = err
         else:
             ret['error'] = err
 
@@ -312,7 +315,10 @@ def post_downvote(request):
 
         (success, err) = post.downvote(request.user)
         if success:
+            ret['updated_score'] = post.get_score()
             ret['status'] = 'OK'
+            if err:
+                ret['state'] = err
         else:
             ret['error'] = err
 
@@ -320,6 +326,28 @@ def post_downvote(request):
 
 
 # =====================================COMMENT=======================================
+@csrf_exempt
+@api_login_required
+def get_comments(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'GET':
+        comment_type = request.GET.get('comment_on')
+        object_id = request.GET.get('obj_id')
+
+        if comment_type == 'post':
+            comment_type = COMMENT_ON_POST
+        elif comment_type == 'comment':
+            comment_type = COMMENT_ON_COMMENT
+        else:
+            ret['error'] = 'invalid_comment_type'
+            return JsonResponse(ret)
+
+        ret['status'] = 'OK'
+        ret['comments'] = [c.to_json() for c in Comment.objects.filter(comment_type=comment_type, object_id=object_id)]
+
+    return JsonResponse(ret)
+
+
 @csrf_exempt
 @api_login_required
 def add_comment(request):
@@ -337,7 +365,7 @@ def add_comment(request):
             ret['error'] = 'invalid_comment_type'
             return JsonResponse(ret)
 
-        (comment, err) = Comment.create(request.user, text, comment_type, object_id)
+        (c, err) = Comment.create(request.user, text, comment_type, object_id)
         if err is None:
             ret['status'] = 'OK'
             ret['comment_id'] = c.pk

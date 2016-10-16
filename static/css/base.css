@@ -1,0 +1,3 @@
+body{position: relative;margin:0;padding:0;}
+#body{width:550px;margin:0 auto;margin-top:60px;}
+.rtl{text-align:right !important;direction:rtl !important;}

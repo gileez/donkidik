@@ -7,13 +7,19 @@ class UserProfileAdmin(admin.ModelAdmin):
     pass
 
 
+class PostMetaInline(admin.TabularInline):
+    model = PostMeta
+
+
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    pass
+    inlines = (PostMetaInline,)
+
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
     pass
+
 
 @admin.register(PostMeta)
 class PostMetaAdmin(admin.ModelAdmin):

@@ -22,6 +22,7 @@ urlpatterns = [
     url(r'^api/post/downvote$', api.post_downvote),
 
     # COMMENT api
+    url(r'^api/comments$', api.get_comments),
     url(r'^api/comment/add$', api.add_comment),
     url(r'^api/comment/remove$', api.remove_comment),
 

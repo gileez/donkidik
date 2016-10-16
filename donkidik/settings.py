@@ -83,7 +83,11 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'donkidik_db',
         'USER': 'root',
-        'PASSWORD': '' if os.getlogin() == 'gili' else 'dibi'
+        'PASSWORD': '' if os.getlogin() == 'gili' else 'dibi',
+        'OPTIONS': {
+            'sql_mode': 'TRADITIONAL',
+            'charset': 'utf8',
+        }
     }
 }
 

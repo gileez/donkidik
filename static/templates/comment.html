@@ -1,0 +1,17 @@
+<div class="comment">
+    <a class="avatar" href="/user/[[data.user.id]]">
+        <img ng-src="[[data.user.pic]]">
+    </a>
+    <div class="content">
+        <a class="author" href="/user/[[data.user.id]]">[[data.user.full_name]]</a>
+        <div class="metadata">
+            <span class="date">[[time_ago]] ago</span>
+        </div>
+        <div class="text">
+            [[data.text]]
+        </div>
+        <div class="actions" ng-if="false"> <!-- TODO: use own user_id in client side (gal) -->
+            <a class="delete">Delete</a>
+        </div>
+    </div>
+</div>

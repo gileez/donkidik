@@ -1,0 +1,32 @@
+<div class="ui raised card post_element">
+    <div class="content">
+        <div class="right floated meta">
+            <div class="score_ctrl">
+                <div class="ctrl up"><i class="caret up icon" ng-click="upvote(data)" ng-class="{orange: data.is_upvoted}"></i></div>
+                <div class="ctrl down"><i class="caret down icon" ng-click="downvote(data)" ng-class="{orange: data.is_downvoted}"></i></div>
+                <div class="count">[[data.post_score]]</div>
+            </div>
+        </div>
+        <div class="profile_pic">
+            <img class="ui avatar image" ng-src="[[data.user.pic]]">
+            <div class="floating ui blue mini label">[[data.user.score]]</div>            
+        </div>
+        <div class="post_author">
+            <a href="/user/[[data.user.id]]">[[data.user.full_name]]</a>
+            <span class="timeago">[[time_ago]] ago</span>
+        </div>
+    </div>
+    <!--<div class="image"></div>-->
+    <div class="content post_body" ng-class="{rtl: is_rtl}" ng-bind-html="data.text | newline"></div>
+    <div class="content comments" ng-show="data.comments.length >= 0">
+        <div class="ui comments">
+            <comment ng-repeat="comment in data.comments" data="comment"></comment>
+        </div>        
+    </div>
+    <div class="extra content">
+        <div class="ui large transparent left icon input">
+            <i class="send_icon talk outline icon" ng-click="add_comment(new_comment_text, data)"></i>
+            <input type="text" ng-model="new_comment_text" class="txt_add_comment" placeholder="Add a comment (press Enter to send)...">
+        </div>
+    </div>
+</div>

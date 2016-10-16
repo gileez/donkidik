@@ -1,0 +1,17 @@
+.ui.card.post_element{position: relative;width:100%;box-shadow: 0 0 0 1px rgba(39,41,43,.15),0 1px 4px 0 rgba(0,0,0,.35);-moz-box-shadow: 0 0 0 1px rgba(39,41,43,.15),0 1px 4px 0 rgba(0,0,0,.35);-webkit-box-shadow: 0 0 0 1px rgba(39,41,43,.15),0 1px 4px 0 rgba(0,0,0,.35);}
+.ui.card.post_element img.avatar{width:55px;height:55px;}
+.ui.card.post_element .profile_pic{display:inline-block;position: relative;}
+.ui.card.post_element .profile_pic .ui.label{left:auto;right:-8px;top:-8px;}
+.ui.card.post_element .post_author{font-size:16px;display:inline-block;left:10px;top:12px;position: relative;}
+.ui.card.post_element .post_author a{font-weight:bold;}
+.ui.card.post_element .post_author .timeago{display:block;font-size:13px;color:#999;}
+.ui.card.post_element .content.post_body{padding-top:5px;}
+.ui.card.post_element .content .score_ctrl{width:55px;height:46px;position: relative;}
+.ui.card.post_element .content .score_ctrl .count{position: absolute;left:0px;width:30px;line-height:46px;height:46px;text-align:right;font-size:14px;}
+.ui.card.post_element .content .score_ctrl .ctrl{position: absolute;right:0;width:25px;height:30px;margin:0;}
+.ui.card.post_element .content .score_ctrl .ctrl.up{top:0;}
+.ui.card.post_element .content .score_ctrl .ctrl.down{bottom:0;}
+.ui.card.post_element .content .score_ctrl .ctrl i{font-size:28px;cursor:pointer;}
+.ui.card.post_element .extra.content .input, .ui.card.post_element .extra.content .input input{width:100%;}
+.ui.card.post_element .extra.content .input input{font-size:14px;}
+.ui.card.post_element .extra.content .send_icon{cursor:pointer;}

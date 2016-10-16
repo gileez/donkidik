@@ -6,6 +6,7 @@ from django.dispatch import receiver
 import pytz
 
 
+DEFAULT_PROFILE_PICTURE = '/static/avatars/default.png'
 POST_TYPE_GENERAL = 1
 POST_TYPE_REPORT = 2
 # POST_TYPE_FORCAST = 3
@@ -69,6 +70,9 @@ class UserProfile(models.Model):
     def __str__(self):
         return "{} profile".format(self.user.username)
 
+    def get_profile_pic(self):
+        return self.pic if self.pic else DEFAULT_PROFILE_PICTURE
+
     def get_score(self):
         ret = 0
         for s in self.user.score_events.all():
@@ -110,15 +114,16 @@ class Post(models.Model, BaseModel):
             'post_score': self.get_score(),
             'user': {
                 'name': self.user.first_name,
+                'full_name': '{} {}'.format(self.user.first_name, self.user.last_name),
                 'id': self.user.id,
                 'score': self.user.profile.get_score(),
-                'pic': self.user.profile.pic
+                'pic': self.user.profile.get_profile_pic()
             },
             'text': self.text,
             'created_ts': self.created_ts,
             'last_action_ts': self.last_action_ts,
             'time': '',
-            'seconds_passed': 0,
+            'seconds_passed': (int(datetime.now().strftime('%s')) - int(self.created_ts.strftime('%s'))),
             'comments': [c.to_json() for c in Comment.objects.filter(object_id=self.id)],
             'upvotes': uv,
             'downvotes': dv,
@@ -216,13 +221,18 @@ class Post(models.Model, BaseModel):
         self.delete()
         return True
 
+    def cancel_vote(self, user):
+        PostDownVote.objects.filter(post_id=self.id, user_id=user.id).delete()
+        PostUpVote.objects.filter(post_id=self.id, user_id=user.id).delete()
+
     def upvote(self, user):
         if self.user.id == user.id:
             return (False, 'own_post')
 
         if self.upvotes.filter(id=user.id).exists():
-            # GAL should i make a cancel_upvote function too?
-            return (False, 'already_upvoted')
+            # upvote exists - cancel it
+            self.cancel_vote(user)
+            return (True, 'vote_cancelled')
 
         # store a new upvote action
         uv = PostUpVote(post=self, user=user)
@@ -238,7 +248,9 @@ class Post(models.Model, BaseModel):
             return (False, 'own_post')
 
         if self.downvotes.filter(id=user.id).exists():
-            return (False, 'already_downvoted')
+            # downvote exists - cancel it
+            self.cancel_vote(user)
+            return (True, 'vote_cancelled')
 
         # store a new downvote action
         dv = PostDownVote(post=self, user=user)
@@ -327,7 +339,6 @@ class ScoreEvent(models.Model):
 class Comment(models.Model, BaseModel):
     comment_type = models.IntegerField(choices=COMMENT_TYPES, default=COMMENT_ON_POST, blank=False, null=False)
     object_id = models.IntegerField(blank=False, null=False, db_index=True)
-    post = models.ForeignKey('Post', related_name='comments', blank=False, null=False, db_index=True)
     user = models.ForeignKey(User, related_name='comments')
     text = models.TextField()
     created_ts = models.DateTimeField(default=datetime.now)
@@ -336,15 +347,24 @@ class Comment(models.Model, BaseModel):
         db_table = 'comment'
 
     def __str__(self):
-        return "{} comment".format(self.post)
+        if self.comment_type == COMMENT_ON_POST:
+            return "comment on post {}".format(self.object_id)
+        elif self.comment_type == COMMENT_ON_COMMENT:
+            return "comment on comment {}".format(self.object_id)
+        return "comment {}".format(self.id)
 
     def to_json(self):
         return {
             'text': self.text,
-            'date': self.created_ts,
-            'time': '',
-            'user_name': self.user.first_name,
-            'user_id': self.user.pk,
+            'created_ts': self.created_ts,
+            'seconds_passed': (int(datetime.now().strftime('%s')) - int(self.created_ts.strftime('%s'))),
+            'user': {
+                'name': self.user.first_name,
+                'full_name': '{} {}'.format(self.user.first_name, self.user.last_name),
+                'id': self.user.id,
+                'score': self.user.profile.get_score(),
+                'pic': self.user.profile.get_profile_pic()
+            },
             'comment_id': self.pk,
         }
 
@@ -430,7 +450,6 @@ def sessionManager(sender, **kwargs):
     else:
         # create a session
         Session.create(post)
-    return
 
 
 def get_end_ts():
@@ -460,10 +479,13 @@ class Session(models.Model, BaseModel):
     def create(post):
         if post.meta.knots < 8:
             return None
+
+        session_type = SESSION_TYPE_REGULAR
         if post.meta.knots < 15:
             session_type = SESSION_TYPE_BIGKITES
         elif post.meta.knots > 25:
             session_type = SESSION_TYPE_SMALLKITES
+
         s = Session(spot=post.meta.spot)
         s.owner = post.user
         s.session_type = session_type
@@ -539,9 +561,9 @@ class Session(models.Model, BaseModel):
             'created_ts': self.created_ts,
             'type': self.session_type,
             # GAL - should these fields do the full jsonify for user \ posts \ at this stage?
-            'users': [u.pk for u in self.users],
-            'intended_users': [u.pk for u in self.intended_users],
-            'related_posts': [p.pk for p in self.related_posts]
+            'users': [u.pk for u in self.users.all()],
+            'intended_users': [u.pk for u in self.intended_users.all()],
+            'related_posts': [p.pk for p in self.related_posts.all()]
         }
 
 

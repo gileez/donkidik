@@ -35,6 +35,15 @@
                     data = {};
 
                 method = method.toLowerCase();
+                if (method == 'get') {
+                    var qs = '';
+                    for (var key in data)
+                        qs += key + '=' + data[key] + '&';
+                    if (url.indexOf('?') != -1)
+                        url = url + '&' + qs;
+                    else
+                        url = url + '?' + qs;
+                }
                 return $http[method](url, data)
                 .then(function(res){
                     return _service_result(res);
@@ -42,7 +51,59 @@
                 .catch(function(res){
                     return _service_result(res);
                 });                
-            },
+            }
+        },
+
+        error: function(message){
+            alert(message);
+        },
+
+        is_hebrew: function(text){
+            return (text && text.match(/[\u0590-\u05FF]/) != null);
+        },
+
+        time_ago_str: function(seconds){
+            var interval = Math.floor(seconds / 31536000);
+            if (interval >= 1) {
+                if (interval == 1)
+                    return 'a year';
+                return interval + " years";
+            }
+            interval = Math.floor(seconds / 2592000);
+            if (interval >= 1) {
+                if (interval == 1)
+                    return 'a month';
+                return interval + " months";
+            }
+            interval = Math.floor(seconds / 604800);
+            if (interval >= 1) {
+                if (interval == 1)
+                    return 'a week';
+                return interval + " weeks";
+            }
+            interval = Math.floor(seconds / 86400);
+            if (interval >= 1) {
+                if (interval == 1)
+                    return 'a day';
+                return interval + " days";
+            }
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) {
+                if (interval == 1)
+                    return 'an hour';
+                return interval + " hours";
+            }
+            interval = Math.floor(seconds / 60);
+            if (interval >= 1) {
+                if (interval == 1)
+                    return 'a minute';
+                return interval + " minutes";
+            }
+            if (Math.floor(seconds) <= 1) {
+                return 'a second';
+            }
+
+            return Math.floor(seconds) + " seconds";
         },
     };
 

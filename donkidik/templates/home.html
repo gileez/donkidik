@@ -2,17 +2,22 @@
 
 {% block title %}Home | DonKiDik{% endblock %}
 
+{% block extra_head %}
+    <link rel="stylesheet" href="/static/css/post.css">
+{% endblock %}
+
 {% block before_body_end %}
+    <script src="/static/js/app/post/service.js"></script>
+    <script src="/static/js/app/post/directive.js"></script>
+    <script src="/static/js/app/comment/directive.js"></script>
     <script src="/static/js/app/home/controller.js"></script>
     <script src="/static/js/app/home/service.js"></script>
 {% endblock %}
 
 {% block body %}
 <div ng-controller="HomeController">
-    <div ng-repeat="post in feed" style="border:solid 2px red;">
-        <p><button ng-click="upvote(post)">UPVOTE</button></p>
-        <p><button ng-click="downvote(post)">DOWNVOTE</button></p>
-        <p><button ng-if="post.is_owner" ng-click="delete(post)">DELETE</button></p>
-    </div>
+        
+    <post ng-repeat="post in feed" data="post"></post>
+
 </div>
 {% endblock %}

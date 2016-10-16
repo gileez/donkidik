@@ -5,18 +5,20 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta http-equiv="Content-Language" content="he">
-        <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"> -->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+
+        <link rel="stylesheet" href="/static/semantic/dist/semantic.min.css">
+        <link rel="stylesheet" href="/static/css/base.css">
 
         <script src="/static/js/lib/jquery.min.js"></script>
         <script src="/static/js/lib/angular.min.js"></script>
+        <script src="/static/js/lib/angular-sanitize.min.js"></script>
         <script src="/static/js/app/main.js"></script>
         {% block extra_head %}{% endblock %}
   </head>
   <body>
-      {% block body %}{% endblock %}
-
+      <div id="body">{% block body %}{% endblock %}</div>
       <script src="/static/js/app/utils.js"></script>
-      <script src="/static/js/app/post/service.js"></script>
       {% block before_body_end %}{% endblock %}
   </body>
 </html>

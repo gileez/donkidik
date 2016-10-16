@@ -1,5 +1,5 @@
 (function(){
-  var app = angular.module('donkidik', []);
+  var app = angular.module('donkidik', ['ngSanitize']);
 
   app.config(function($interpolateProvider) {
     $interpolateProvider.startSymbol('[[');
@@ -19,6 +19,18 @@
       return result.join("&");
     });
   }]);
+
+  app.filter('newline', function () {
+    return function(text) {
+      return text.replace(/\n/g, '<br/>');
+    };
+  });
+
+  // app.filter('trusted', ['$sce', function ($sce) {
+  //   return function(url) {
+  //     return $sce.trustAsResourceUrl(url);
+  //   };
+  // }]);
 
   window.app = app;
 })();
