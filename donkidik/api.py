@@ -82,7 +82,6 @@ def login_req(request):
         user = authenticate(username=email, password=password)
         if user:
             ret['status'] == 'OK'
-            # GAL - i think this next line was missing here
             login(request, user)
         else:
             ret['error'] = 'invalid_creds'
@@ -355,12 +354,15 @@ def remove_comment(request):
     if request.method == 'POST':
         comment_id = request.POST.get('comment_id')
         comment = Comment.get_by_id(comment_id)
-        if comment:
-            (success, err) = comment.remove(request.user)
-            if success:
-                ret['status'] = 'OK'
-            else:
-                ret['error'] = err
+        if not comment:
+            ret['error'] = 'invalid_comment_id'
+            return JsonResponse(ret)
+
+        (success, err) = comment.remove(request.user)
+        if success:
+            ret['status'] = 'OK'
+        else:
+            ret['error'] = err
 
     return JsonResponse(ret)
 
@@ -373,12 +375,15 @@ def update_comment(request):
         comment_id = request.POST.get('comment_id')
         text = request.POST.get('text')
         comment = Comment.get_by_id(comment_id)
-        if comment:
-            (success, err) = comment.update(request.user, text)
-            if success:
-                ret['status'] = 'OK'
-            else:
-                ret['error'] = err
+        if not comment:
+            ret['error'] = 'invalid_comment_id'
+            return JsonResponse(ret)
+
+        (success, err) = comment.update(request.user, text)
+        if success:
+            ret['status'] = 'OK'
+        else:
+            ret['error'] = err
 
     return JsonResponse(ret)
 

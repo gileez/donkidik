@@ -119,7 +119,7 @@ class Post(models.Model, BaseModel):
             'last_action_ts': self.last_action_ts,
             'time': '',
             'seconds_passed': 0,
-            'comments': [c.to_json() for c in self.comments.all()],
+            'comments': [c.to_json() for c in Comment.objects.filter(object_id=self.id)],
             'upvotes': uv,
             'downvotes': dv,
             'is_owner': user.id == self.user.id,
@@ -247,15 +247,6 @@ class Post(models.Model, BaseModel):
         # store ScoreEvent
         ScoreEvent.create(dv)
         return (True, None)
-
-    def remove_comment(self, user, cid):
-        if not (user or cid):
-            return (False, "Missing Data")
-        try:
-            c = self.comments.get(pk=cid)
-        except:
-            return (False, "Comment Not Found")
-        return c.remove(user)
 
 
 class PostUpVote(models.Model):
