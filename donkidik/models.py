@@ -29,6 +29,27 @@ EVENT_UPVOTE_SCORE = 2
 EVENT_DOWNVOTE_SCORE = -1
 EVENT_WINDREPORT_SCORE = 5
 
+COMMENT_ON_POST = 1
+COMMENT_ON_COMMENT = 2
+COMMENT_TYPES = [
+    (COMMENT_ON_POST, 'On Post'),
+    (COMMENT_ON_COMMENT, 'On Comment'),
+]
+
+
+# BASE model
+class BaseModel(object):
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def get_by_id(cls, id):
+        try:
+            return cls.objects.get(pk=id)
+        except:
+            return None
+
 
 @receiver(post_save, sender=User)
 def create_profile(sender, **kwargs):
@@ -61,7 +82,7 @@ class UserProfile(models.Model):
         pass
 
 
-class Post(models.Model):
+class Post(models.Model, BaseModel):
     user = models.ForeignKey(User, related_name='posts')
     post_type = models.IntegerField(choices=POST_TYPES, default=POST_TYPE_GENERAL, blank=False, null=False, db_index=True)
     text = models.TextField()
@@ -150,7 +171,7 @@ class Post(models.Model):
         return post
 
     def update(self, user, post_type, text=None, meta_data=None):
-        if not (user.pk == self.user.pk or user.is_admin):
+        if not (user.pk == self.user.pk or user.is_staff):
             return (False, "permission_denied")
         if post_type not in [POST_TYPE_GENERAL, POST_TYPE_REPORT]:
             return (False, "invalid_post_type")
@@ -189,7 +210,7 @@ class Post(models.Model):
         return (True, None)
 
     def remove(self, user):
-        if not (user.pk == self.user.pk or user.is_admin):
+        if not (user.pk == self.user.pk or user.is_staff):
             # user has no permission to delete this post
             return False
         self.delete()
@@ -235,13 +256,6 @@ class Post(models.Model):
         except:
             return (False, "Comment Not Found")
         return c.remove(user)
-
-    @staticmethod
-    def get_by_id(post_id):
-        try:
-            return Post.objects.get(pk=post_id)
-        except:
-            return None
 
 
 class PostUpVote(models.Model):
@@ -319,7 +333,9 @@ class ScoreEvent(models.Model):
         return None
 
 
-class Comment(models.Model):
+class Comment(models.Model, BaseModel):
+    comment_type = models.IntegerField(choices=COMMENT_TYPES, default=COMMENT_ON_POST, blank=False, null=False)
+    object_id = models.IntegerField(blank=False, null=False, db_index=True)
     post = models.ForeignKey('Post', related_name='comments', blank=False, null=False, db_index=True)
     user = models.ForeignKey(User, related_name='comments')
     text = models.TextField()
@@ -341,31 +357,37 @@ class Comment(models.Model):
             'comment_id': self.pk,
         }
 
-    @staticmethod
-    def get_by_id(comment_id):
-        try:
-            return Comment.objects.get(pk=comment_id)
-        except:
-            return None
+    def get_related_object(self):
+        if self.comment_type == COMMENT_ON_POST:
+            return Post.get_by_id(self.object_id)
+        elif self.comment_type == COMMENT_ON_COMMENT:
+            return Comment.get_by_id(self.object_id)
+        return None
 
     @staticmethod
-    def create(user, text, post_id):
+    def create(user, text, comment_type, object_id):
         if not (user and text):
-            return (False, 'missing_args')
-        try:
-            p = Post.objects.get(pk=post_id)
-        except:
-            return (False, 'invalid_post')
-        try:
-            c = Comment(user=user, text=text, post=p).save()
-        except:
-            return (False, 'failed_creating_comment')
+            return (None, 'missing_args')
+
+        if comment_type == COMMENT_ON_POST:
+            cls = Post
+        elif comment_type == COMMENT_ON_COMMENT:
+            cls = Comment
+        else:
+            return (None, 'invalid_type')
+
+        obj = cls.get_by_id(object_id)
+        if not obj:
+            return (None, 'invalid_object_id')
+
+        c = Comment(user=user, text=text, comment_type=comment_type, object_id=object_id)
+        c.save()
         return (c, None)
 
     def remove(self, user):
         if not (user):
             return (False, 'missing_user')
-        if not (user.pk == self.user.pk or user.is_admin):
+        if not (user.pk == self.user.pk or user.is_staff):
             return (False, 'permission_denied')
         self.delete()
         return (True, None)
@@ -425,7 +447,7 @@ def get_end_ts():
     return datetime.now().replace(tzinfo=pytz.UTC, hour=23, minute=59, second=59)
 
 
-class Session(models.Model):
+class Session(models.Model, BaseModel):
     spot = models.ForeignKey('Spot', related_name='sessions', blank=False, null=True)
     owner = models.ForeignKey(User, related_name='own_sessions', blank=True, null=True)
     users = models.ManyToManyField(User, related_name='sessions', blank=True)
@@ -442,13 +464,6 @@ class Session(models.Model):
 
     def __str__(self):
         return "Session {} at {}".format(self.id, self.spot.name)
-
-    @staticmethod
-    def get_by_id(session_id):
-        try:
-            return Session.objects.get(pk=session_id)
-        except:
-            return None
 
     @staticmethod
     def create(post):

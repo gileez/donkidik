@@ -37,7 +37,7 @@ def get_sessions(request):
 
 
 @csrf_exempt
-@login_required
+@api_login_required
 def get_one_post(request, post_id):
     ret = {'status': 'FAIL'}
     if not request.user.is_authenticated():
@@ -53,17 +53,17 @@ def get_one_post(request, post_id):
 
 
 @csrf_exempt
-@login_required
+@api_login_required
 def get_spots(request):
     ret = {'status': 'FAIL', 'spots': []}
     spots = Spot.objects.all()
     for s in spots:
         ret['spots'].append({
-                                'id': int(s.id),
-                                'name': s.name,
-                                'long': s.longtitude,
-                                'lat': s.latitude
-                            })
+            'id': int(s.id),
+            'name': s.name,
+            'long': s.longtitude,
+            'lat': s.latitude
+        })
     ret['status'] = 'OK'
     return JsonResponse(ret)
 
@@ -326,10 +326,19 @@ def post_downvote(request):
 def add_comment(request):
     ret = {'status': 'FAIL'}
     if request.method == 'POST':
-        post_id = request.POST.get('post_id')
+        comment_type = request.POST.get('comment_on')
+        object_id = request.POST.get('obj_id')
         text = request.POST.get('text')
 
-        (comment, err) = Comment.create(request.user, text, post_id)
+        if comment_type == 'post':
+            comment_type = COMMENT_ON_POST
+        elif comment_type == 'comment':
+            comment_type = COMMENT_ON_COMMENT
+        else:
+            ret['error'] = 'invalid_comment_type'
+            return JsonResponse(ret)
+
+        (comment, err) = Comment.create(request.user, text, comment_type, object_id)
         if err is None:
             ret['status'] = 'OK'
             ret['comment_id'] = c.pk

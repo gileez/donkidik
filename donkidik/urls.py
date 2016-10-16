@@ -18,9 +18,12 @@ urlpatterns = [
     url(r'^api/post/create$', api.post_create),
     url(r'^api/post/update$', api.post_update),
     url(r'^api/post/delete$', api.post_delete),
-    url(r'^api/post/comment$', api.post_comment_add),
     url(r'^api/post/upvote$', api.post_upvote),
     url(r'^api/post/downvote$', api.post_downvote),
+
+    # COMMENT api
+    url(r'^api/comment/add$', api.add_comment),
+    url(r'^api/comment/remove$', api.remove_comment),
 
     # USER api
 
