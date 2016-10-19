@@ -9,10 +9,11 @@ import pytz
 DEFAULT_PROFILE_PICTURE = '/static/avatars/default.png'
 POST_TYPE_GENERAL = 1
 POST_TYPE_REPORT = 2
-# POST_TYPE_FORCAST = 3
+POST_TYPE_FORCAST = 3
 POST_TYPES = [
     (POST_TYPE_GENERAL, 'General'),
     (POST_TYPE_REPORT, 'Report'),
+    (POST_TYPE_FORCAST, 'Forcast'),
 ]
 # ---------------------------------------------
 SESSION_TYPE_BIGKITES = 1
@@ -108,9 +109,16 @@ class Post(models.Model, BaseModel):
     def to_json(self, user):
         uv = [u.id for u in self.upvotes.all()]
         dv = [u.id for u in self.downvotes.all()]
+
+        post_type_str = 'general'
+        if self.post_type == POST_TYPE_REPORT:
+            post_type_str = 'report'
+        elif self.post_type == POST_TYPE_FORCAST:
+            post_type_str = 'forcast'
+
         ret = {
             'post_id': self.id,
-            'post_type': self.post_type,
+            'post_type': post_type_str,
             'post_score': self.get_score(),
             'user': {
                 'name': self.user.first_name,

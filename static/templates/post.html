@@ -16,7 +16,20 @@
             <span class="timeago">[[time_ago]] ago</span>
         </div>
     </div>
-    <!--<div class="image"></div>-->
-    <div class="content post_body" ng-class="{rtl: is_rtl}" ng-bind-html="data.text | newline"></div>
+    <div class="content post_body">
+        <div ng-class="{rtl: is_rtl}" ng-bind-html="data.text | newline"></div>
+        <div ng-class="{rtl: is_rtl}" ng-show="data.post_type == 'report' && !show_media"><button ng-click="show_media=true" class="ui mini blue button">Map <i class="map pin icon"></i></button></div>
+        <div ng-if="data.post_type == 'report'" class="report_actions">
+            <button ng-hide="true" class="ui green button">I'm on my way!</button>
+        </div>
+    </div>
+    <div class="map" ng-if="data.post_type == 'report' && show_media">
+        <iframe
+          width="550"
+          height="250"
+          frameborder="0" style="border:0"
+          src="https://www.google.com/maps/embed/v1/view?key=AIzaSyCF1XEM4UloGGf_8maifRr-ybcTqAVoSss&center=32.0837953,34.7691459&zoom=15&maptype=satellite">
+        </iframe>        
+    </div>
     <comment-box comment-type="post" data="data" add-comment-method="add_comment(text, post)"></comment-box>
 </div>

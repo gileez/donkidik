@@ -11,6 +11,7 @@ app.directive('post', function(postService){
 
             $scope.is_rtl = utils.is_hebrew($scope.data.text);
             $scope.time_ago = utils.time_ago_str($scope.data.seconds_passed);
+            $scope.show_media = false;
 
             $scope.upvote = function(post){
                 postService.upvote(post)

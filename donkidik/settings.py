@@ -22,6 +22,7 @@ PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '20!j9@i-0h3!#%-e+ii(wd8lmfxu+fx%_i(iknf6(59o6!zq-u'
+GOOGLE_MAPS_API_KEY = "AIzaSyCF1XEM4UloGGf_8maifRr-ybcTqAVoSss"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -61,7 +62,7 @@ ROOT_URLCONF = 'donkidik.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(PROJECT_ROOT, 'templates').replace('\\','/')],
+        'DIRS': [os.path.join(PROJECT_ROOT, 'templates').replace('\\', '/')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -69,6 +70,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'donkidik.context_processors.main',
             ],
         },
     },
