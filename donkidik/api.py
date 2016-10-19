@@ -1,4 +1,5 @@
 from donkidik.models import *
+import donkidik.utils as utils
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -12,8 +13,9 @@ from donkidik.decorators import api_login_required
 def get_feed(request):
     ret = {'status': 'FAIL'}
     if request.method == 'GET':
+        (from_idx, to_idx) = paging = utils.get_paging(request)
         posts = []
-        for post in Post.objects.all().order_by('-last_action_ts')[:50]:
+        for post in Post.objects.all().order_by('-last_action_ts')[from_idx:to_idx]:
             posts.append(post.to_json(request.user))
 
         ret['status'] = 'OK'
@@ -327,12 +329,14 @@ def post_downvote(request):
 
 # =====================================COMMENT=======================================
 @csrf_exempt
-@api_login_required
+# @api_login_required
 def get_comments(request):
     ret = {'status': 'FAIL'}
     if request.method == 'GET':
         comment_type = request.GET.get('comment_on')
         object_id = request.GET.get('obj_id')
+        page_number = request.GET.get('p', '1')
+        (from_idx, to_idx) = paging = utils.get_paging(request)
 
         if comment_type == 'post':
             comment_type = COMMENT_ON_POST
@@ -342,8 +346,9 @@ def get_comments(request):
             ret['error'] = 'invalid_comment_type'
             return JsonResponse(ret)
 
+        comments = Comment.objects.filter(comment_type=comment_type, object_id=object_id).order_by('id')[from_idx:to_idx]
         ret['status'] = 'OK'
-        ret['comments'] = [c.to_json() for c in Comment.objects.filter(comment_type=comment_type, object_id=object_id)]
+        ret['comments'] = [c.to_json() for c in comments]
 
     return JsonResponse(ret)
 

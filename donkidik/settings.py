@@ -28,6 +28,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+PAGINATION_PAGE_SIZE = 20
+
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]

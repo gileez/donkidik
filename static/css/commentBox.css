@@ -1,0 +1,5 @@
+.comment_box .extra.content .input, .ui.card.post_element .extra.content .input input{width:100%;}
+.comment_box .extra.content .input input{font-size:14px;padding-top:10px !important;padding-bottom:6px !important;}
+.comment_box .extra.content .send_icon{cursor:pointer !important;}
+.comment_box .content.comments{padding-bottom: 10px; border-bottom: solid 1px #e1e1e1; margin-bottom: 4px;}
+.comment_box .content.comments .comment .content{position: relative;top:1px;}

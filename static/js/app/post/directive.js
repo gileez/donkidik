@@ -36,7 +36,6 @@ app.directive('post', function(postService){
                 });
             };
 
-            // TODO: PUT COMMENT LOGIN IN COMMENT / COMMENTBOX DIRECTIVE
             $scope.add_comment = function(text, post){
                 if (!text)
                     return;
@@ -64,12 +63,6 @@ app.directive('post', function(postService){
             };
         },
         link: function(scope, el, attrs) {
-
-            $(el).find('.txt_add_comment').keyup(function(e){
-                if (e.keyCode == 13) { // enter key
-                    scope.add_comment($(this).val(), scope.data);
-                }
-            });
 
         }
     };

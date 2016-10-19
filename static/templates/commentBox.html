@@ -1,0 +1,13 @@
+<div class="content comment_box">
+    <div class="content comments" ng-show="comments.length >= 0">
+        <div class="ui comments">
+            <comment ng-repeat="comment in comments" data="comment"></comment>
+        </div>        
+    </div>
+    <div class="extra content">
+        <div class="ui large transparent left icon input">
+            <i class="send_icon talk outline icon" ng-click="addCommentMethod({text: new_comment_text, post: data})"></i>
+            <input type="text" ng-model="new_comment_text" class="txt_add_comment" placeholder="Add a comment (press Enter to send)...">
+        </div>
+    </div>    
+</div>

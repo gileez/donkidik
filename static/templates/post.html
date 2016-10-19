@@ -18,15 +18,5 @@
     </div>
     <!--<div class="image"></div>-->
     <div class="content post_body" ng-class="{rtl: is_rtl}" ng-bind-html="data.text | newline"></div>
-    <div class="content comments" ng-show="data.comments.length >= 0">
-        <div class="ui comments">
-            <comment ng-repeat="comment in data.comments" data="comment"></comment>
-        </div>        
-    </div>
-    <div class="extra content">
-        <div class="ui large transparent left icon input">
-            <i class="send_icon talk outline icon" ng-click="add_comment(new_comment_text, data)"></i>
-            <input type="text" ng-model="new_comment_text" class="txt_add_comment" placeholder="Add a comment (press Enter to send)...">
-        </div>
-    </div>
+    <comment-box comment-type="post" data="data" add-comment-method="add_comment(text, post)"></comment-box>
 </div>

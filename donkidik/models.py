@@ -124,7 +124,10 @@ class Post(models.Model, BaseModel):
             'last_action_ts': self.last_action_ts,
             'time': '',
             'seconds_passed': (int(datetime.now().strftime('%s')) - int(self.created_ts.strftime('%s'))),
-            'comments': [c.to_json() for c in Comment.objects.filter(object_id=self.id)],
+
+            # we're starting to use pagination, and comments will be fetched seperately
+            # 'comments': [c.to_json() for c in Comment.objects.filter(object_id=self.id)],
+
             'upvotes': uv,
             'downvotes': dv,
             'is_owner': user.id == self.user.id,
