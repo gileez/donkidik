@@ -6,7 +6,7 @@
     </div>
     <div class="extra content">
         <div class="ui large transparent left icon input">
-            <i class="send_icon talk outline icon" ng-click="addCommentMethod({text: new_comment_text, post: data})"></i>
+            <i class="send_icon talk outline icon" ng-click="fire_add_comment_method(new_comment_text)"></i>
             <input type="text" ng-model="new_comment_text" class="txt_add_comment" placeholder="Add a comment (press Enter to send)...">
         </div>
     </div>    

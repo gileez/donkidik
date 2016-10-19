@@ -14,6 +14,17 @@
         <script src="/static/js/lib/angular.min.js"></script>
         <script src="/static/js/lib/angular-sanitize.min.js"></script>
         <script src="/static/js/app/main.js"></script>
+        <script>
+        var globals = { is_authenticated: false };
+
+        {% if user.is_authenticated %}
+        globals.is_authenticated = true;
+        globals.user_name = "{{user.first_name}} {{user.last_name}}";
+        globals.user_id = "{{user.id}}";
+        globals.user_pic = "{{user.profile.get_profile_pic}}"
+        {% endif %}
+
+        </script>
         {% block extra_head %}{% endblock %}
   </head>
   <body>

@@ -1,5 +1,5 @@
 
-app.directive('commentBox', function(){
+app.directive('commentBox', function($timeout){
     return {
         restrict: 'E',
         templateUrl: '/static/templates/commentBox.html',
@@ -29,7 +29,27 @@ app.directive('commentBox', function(){
                     }
                     else utils.error('Error performing action: ' + res.error || 'Internal error');
                 });
+            };
 
+            $scope.fire_add_comment_method = function(text){
+                $scope.addCommentMethod({
+                    text: text, 
+                    obj: $scope.data,
+                    cb: function(res){
+                        $timeout(function(){
+                            $scope.new_comment_text = '';
+                            $scope.comments.push({
+                                user: {
+                                    id: globals.user_id,
+                                    full_name: globals.user_name,
+                                    pic: globals.user_pic
+                                },
+                                text: text,
+                                seconds_passed: 1
+                            });
+                        });
+                    }
+                });
             };
 
         },
@@ -37,10 +57,7 @@ app.directive('commentBox', function(){
 
             $(el).find('.txt_add_comment').keyup(function(e){
                 if (e.keyCode == 13) { // enter key
-                    scope.addCommentMethod({
-                        text: $(this).val(), 
-                        post: scope.data
-                    });
+                    scope.fire_add_comment_method($(this).val());
                 }
             });
 

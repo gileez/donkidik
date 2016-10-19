@@ -37,29 +37,25 @@ app.directive('post', function(postService){
                 });
             };
 
-            $scope.add_comment = function(text, post){
+            $scope.add_comment = function(text, obj, cb){
                 if (!text)
                     return;
 
                 var data = {
                     comment_on: 'post',
-                    obj_id: post.post_id,
+                    obj_id: obj.post_id,
                     text: text
                 };
                 
                 postService.add_comment(data)
                 .then(function(res){
                     if (res.success) {
-                        $scope.new_comment_text = '';
-                        postService.get_comments(data)
-                        .then(function(res){
-                            if (res.success) {
-                                $scope.data.comments = res.comments;
-                            }
-                            else utils.error('Error performing action: ' + res.error || 'Internal error');
-                        });
+                        cb({ success: true });
                     }
-                    else utils.error('Error performing action: ' + res.error || 'Internal error');
+                    else {
+                        utils.error('Error performing action: ' + res.error || 'Internal error');
+                        cb({ success: false });
+                    }
                 });
             };
         },
