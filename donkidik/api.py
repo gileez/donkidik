@@ -417,4 +417,80 @@ def update_comment(request):
 
 # ====================================FOLLOW========================================
 # TODO
+
+
 # ====================================SESSION=======================================
+@csrf_exempt
+@api_login_required
+def session_add_user(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'POST':
+        session_id = request.POST.get('session_id')
+        if not session_id:
+            ret['error'] = 'missing_session_id'
+            return JsonResponse(ret)
+        session = Session.get_by_id(session_id)
+        if not session:
+            ret['error'] = 'invalid_session_id'
+            return JsonResponse(ret)
+        if not session.add_user(request.user):
+            ret['error'] = 'action_failed'
+            return JsonResponse(ret)
+    return JsonResponse(ret)
+
+
+@csrf_exempt
+@api_login_required
+def session_remove_user(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'POST':
+        session_id = request.POST.get('session_id')
+        if not session_id:
+            ret['error'] = 'missing_session_id'
+            return JsonResponse(ret)
+        session = Session.get_by_id(session_id)
+        if not session:
+            ret['error'] = 'invalid_session_id'
+            return JsonResponse(ret)
+        if not session.remove_user(request.user):
+            ret['error'] = 'action_failed'
+            return JsonResponse(ret)
+    return JsonResponse(ret)
+
+
+@csrf_exempt
+@api_login_required
+def session_add_intended_user(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'POST':
+        session_id = request.POST.get('session_id')
+        if not session_id:
+            ret['error'] = 'missing_session_id'
+            return JsonResponse(ret)
+        session = Session.get_by_id(session_id)
+        if not session:
+            ret['error'] = 'invalid_session_id'
+            return JsonResponse(ret)
+        if not session.add_intended_user(request.user):
+            ret['error'] = 'action_failed'
+            return JsonResponse(ret)
+    return JsonResponse(ret)
+
+
+@csrf_exempt
+@api_login_required
+def session_remove_intended_user(request):
+    ret = {'status': 'FAIL'}
+    if request.method == 'POST':
+        session_id = request.POST.get('session_id')
+        if not session_id:
+            ret['error'] = 'missing_session_id'
+            return JsonResponse(ret)
+        session = Session.get_by_id(session_id)
+        if not session:
+            ret['error'] = 'invalid_session_id'
+            return JsonResponse(ret)
+        if not session.remove_intended_user(request.user):
+            ret['error'] = 'action_failed'
+            return JsonResponse(ret)
+    return JsonResponse(ret)
