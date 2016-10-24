@@ -18,18 +18,53 @@
     </div>
     <div class="content post_body">
         <div ng-class="{rtl: is_rtl}" ng-bind-html="data.text | newline"></div>
-        <div ng-class="{rtl: is_rtl}" ng-show="data.post_type == 'report' && !show_media"><button ng-click="show_media=true" class="ui mini blue button">Map <i class="map pin icon"></i></button></div>
+        <!--div ng-class="{rtl: is_rtl}" ng-show="data.post_type == 'report'&& !show_media"><button ng-click="show_media=true" class="ui mini blue button">Map <i class="map pin icon"></i></button></div-->
         <div ng-if="data.post_type == 'report'" class="report_actions">
             <button ng-hide="true" class="ui green button">I'm on my way!</button>
         </div>
     </div>
-    <div class="map" ng-if="data.post_type == 'report' && show_media">
-        <iframe
-          width="550"
-          height="250"
-          frameborder="0" style="border:0"
-          src="https://www.google.com/maps/embed/v1/view?key=AIzaSyCF1XEM4UloGGf_8maifRr-ybcTqAVoSss&center=32.0837953,34.7691459&zoom=15&maptype=satellite">
-        </iframe>        
+    <div class="ui inverted raised card session_container" ng-if="data.post_type == 'report'">
+        <div class="session_header">
+            <div class="spot_text">
+                <div class="name">Geula</div>
+                <div class="city">Tel-Aviv</div>
+            </div>
+            <div class="duration">
+            28 minutes by car
+            </div>
+        </div>
+        <div class="attendance">
+            <div class="now">
+                12 on spot
+                <div class="now_users">
+                    <img class="ui avatar image" ng-src="[[data.user.pic]]"> 
+                    <img class="ui avatar image" ng-src="[[data.user.pic]]"> 
+                    <img class="ui avatar image" ng-src="[[data.user.pic]]">           
+                </div>
+            </div>
+            <div class="later">
+                6 planning
+                <div class="later_users">
+                    <img class="ui avatar image" ng-src="[[data.user.pic]]"> 
+                    <img class="ui avatar image" ng-src="[[data.user.pic]]"> 
+                </div>
+            </div>
+            <div class="join_buttons">
+                <button ng-click="" class="ui mini blue button">Going<i class="add user icon"></i></button>
+                <button ng-click="" class="ui mini grey button">Going Later<i class="add to calendar icon"></i></button>
+            </div>
+        </div>
+            <div class="pic">
+                <div class="map">
+                    <iframe
+                      width="150"
+                      height="150"
+                      frameborder="0" style="border:0"
+                      src="https://www.google.com/maps/embed/v1/view?key=AIzaSyCF1XEM4UloGGf_8maifRr-ybcTqAVoSss&center=32.0837953,34.7691459&zoom=15&maptype=satellite">
+                    </iframe>        
+                </div>
+            </div>
     </div>
+    
     <comment-box comment-type="post" data="data" add-comment-method="add_comment(text, obj, cb)"></comment-box>
 </div>

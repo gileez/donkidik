@@ -2,10 +2,10 @@
 .ui.card.post_element img.avatar{width:55px;height:55px;}
 .ui.card.post_element .profile_pic{display:inline-block;position: relative;}
 .ui.card.post_element .profile_pic .ui.label{left:auto;right:-8px;top:-8px;}
-.ui.card.post_element .post_author{font-size:16px;display:inline-block;left:10px;top:12px;position: relative;}
+.ui.card.post_element .post_author{font-size:14px;display:inline-block;left:10px;top:12px;position: relative;}
 .ui.card.post_element .post_author a{font-weight:bold;}
-.ui.card.post_element .post_author .timeago{display:block;font-size:13px;color:#999;}
-.ui.card.post_element .content.post_body{padding-top:0px;font-size:22px;}
+.ui.card.post_element .post_author .timeago{display:block;font-size:12px;color:#999;}
+.ui.card.post_element .content.post_body{padding:10px;padding-left:15px;font-size:14px;}
 .ui.card.post_element .content.post_body .report_actions{padding:5px 0;}
 .ui.card.post_element .content.post_body .report_actions button{margin:0;}
 .ui.card.post_element .content.post_body a{font-size:14px;}
@@ -15,3 +15,18 @@
 .ui.card.post_element .content .score_ctrl .ctrl.up{top:0;}
 .ui.card.post_element .content .score_ctrl .ctrl.down{bottom:0;}
 .ui.card.post_element .content .score_ctrl .ctrl i{font-size:28px;cursor:pointer;}
+.ui.card.post_element .session_container{width:auto;margin:15px;margin-top:0;padding:10px 20px;position:relative;}
+.ui.card.post_element .session_container .session_header{display:block; margin-bottom:5px;}
+.ui.card.post_element .session_container .session_header .spot_text{display:inline-block; vertical-align: top;}
+.ui.card.post_element .session_container .session_header .spot_text .name{font-size:14px;}
+.ui.card.post_element .session_container .session_header .spot_text .city{font-size: 12px; color:#999;}
+.ui.card.post_element .session_container .session_header .duration{display:inline-block; margin:0 20px;vertical-align: bottom;float:right;}
+.ui.card.post_element .session_container .pic{display:inline-block;width: 150px; height:150px; vertical-align: bottom;float:right;position:absolute;bottom: 10px; right:20px;}
+.ui.card.post_element .session_container .pic .map{}
+.ui.card.post_element .session_container .attendance{display:inline-block; height:100%;}
+.ui.card.post_element .session_container .attendance img.avatar{display:inline-block; height:20px; width:20px; margin:5px; margin-left:0px;}
+.ui.card.post_element .session_container .attendance .now{display:block; height: 20%;}
+.ui.card.post_element .session_container .attendance .later{display:block; height: 20%;}
+.ui.card.post_element .session_container .attendance .join_buttons{display: block; height: 20%;width:100%;}
+.ui.card.post_element .session_container .attendance .join_buttons i{font-size:12px; padding: 5px;}
+.ui.card.post_element .session_container .attendance .join_buttons button{display: inline-block; margin-top:10px;}
